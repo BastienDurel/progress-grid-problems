@@ -39,7 +39,12 @@ const DEFAULT_COLUMNS: GridColumnPropsT[] = [
   { tid: 17, cell: "reporting", title: "Reporting", width: 100, sortable: false },
 ];
 function refreshData() {
-  axios.get("https://neroli.tests.data.fr/Commandes").then(r => data.value = r.data).catch(e => { console.error(e); alert(`Error: ${e}`); })
+  loader.value = true;
+  axios.get("https://neroli.tests.data.fr/Commandes", {
+    params: { skip: state.skip, count: state.take }
+  }).then(r => data.value = r.data)
+    .catch(e => { console.error(e); alert(`Error: ${e}`); })
+    .finally(() => loader.value = false);
 }
 function sortChangeHandler(event: GridSortChangeEvent) {
   console.log(event);
@@ -62,7 +67,7 @@ function resetColumns() {
 }
 
 const reportingTitle = (data: any, report: number) => {
-  switch ((data.numCmde + report) % 3) {
+  switch ((_state(data) + report) % 3) {
     case 0: return undefined;
     case 1: return "OK";
     case 2: return "Bad !";
@@ -70,6 +75,7 @@ const reportingTitle = (data: any, report: number) => {
   }
 }
 
+const _state = (data: any): number => (data.numCmde || 1) + (data.etat || 0);
 const _class = (num: number) => {
   switch (num % 3) {
     case 0: return "secondary";
@@ -78,10 +84,10 @@ const _class = (num: number) => {
     default: return "secondary";
   }
 }
-const reportingTheme = (data: any, report: number) => _class(data.numCmde + report);
-const reportingClass = (data: any, report: number) => _class(data.numCmde + report);
-const formationClass = (data: any) => "formation " + _class(data.numCmde + 1);
-const suiviRRClass = (data: any) => "suivi-rr " + _class(data.numCmde + 2);
+const reportingTheme = (data: any, report: number) => _class(_state(data) + report);
+const reportingClass = (data: any, report: number) => _class(_state(data) + report);
+const formationClass = (data: any) => "formation " + _class(_state(data) + 1);
+const suiviRRClass = (data: any) => "suivi-rr " + _class(_state(data) + 2);
 
 const reportingClick = (_data: any, _report: number) => 0;
 const formationClick = (_data: any) => 0;
@@ -89,17 +95,16 @@ const suiviRRClick = (_data: any) => 0;
 </script>
 
 <template>
-  <Button @click="refreshData">Recharger</Button>
+  <Button @click="refreshData" :svg-icon="arrowRotateCwIcon">Recharger</Button>
   <Grid :data-items="data" :key="state.key" :columns="mergeColumns(DEFAULT_COLUMNS, state.columns)" :size="'small'"
     :resizable="state.resizable" :sort="sort" :reorderable="state.reorderable" :sortable="state.sortable" :pageable="{
       info: true,
       pageSizes: [10, 15, 20, 50, 100],
       pageSizeValue: state.take,
       buttonCount: 10,
-    }" :style="{ minHeight: '500px' }" :skip="state.skip" :take="state.take" :total="state.total"
-    :page-size="state.take" :loader="loader" @pagechange="e => pageChangeHandler(e, state, refreshData)"
-    @sortchange="sortChangeHandler" @columnreorder="e => reorderColumns(e, state, DEFAULT_COLUMNS)"
-    @columnresize="e => resizeColumns(e, state)">
+    }" :skip="state.skip" :take="state.take" :total="state.total" :page-size="state.take" :loader="loader"
+    @pagechange="e => pageChangeHandler(e, state, refreshData)" @sortchange="sortChangeHandler"
+    @columnreorder="e => reorderColumns(e, state, DEFAULT_COLUMNS)" @columnresize="e => resizeColumns(e, state)">
     <template v-slot:etatTemplate="{ props }">
       <td :class="props.class + ' date'" role="gridcell">
         baz
@@ -190,6 +195,10 @@ const suiviRRClick = (_data: any) => 0;
 </template>
 
 <style scoped lang="scss">
+.k-grid {
+  height: calc(100vh - 84px)
+}
+
 .k-button {
   margin-bottom: 1em;
 }
