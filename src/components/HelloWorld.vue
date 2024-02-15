@@ -8,7 +8,7 @@ import { arrowRotateCwIcon, chevronLeftIcon, filterClearIcon, gearIcon, gridLayo
 import { SvgIcon } from "@progress/kendo-vue-common";
 import axios from 'axios';
 import getState, { GridColumnPropsT } from '../stores/state';
-import { mergeColumns, pageChangeHandler, reorderColumns, resizeColumns } from './grid';
+import { mergeColumns, pageChangeHandler, reorderColumns, resizeColumns, resetColumns, toggleColumn } from './grid';
 import PdvAddress from "../components/PdvAddress.vue";
 import DateStr from "../components/Date.vue";
 import ColumnsGridMenu from '../components/ColumnsGridMenu.vue';
@@ -38,6 +38,7 @@ const DEFAULT_COLUMNS: GridColumnPropsT[] = [
   { tid: 16, cell: "suiviRR", title: "Suivi RR", width: 50, sortable: false },
   { tid: 17, cell: "reporting", title: "Reporting", width: 100, sortable: false },
 ];
+(window as any).$DEFAULT_COLUMNS = DEFAULT_COLUMNS;
 function refreshData() {
   loader.value = true;
   axios.get("https://neroli.tests.data.fr/Commandes", {
@@ -52,19 +53,6 @@ function sortChangeHandler(event: GridSortChangeEvent) {
   refreshData();
 }
 nextTick(refreshData);
-
-function toggleColumn(title: string) {
-  if (!state.columns) {
-    state.columns = DEFAULT_COLUMNS;
-  }
-  const col = state.columns.find(c => c.title == title);
-  if (col) col.hidden = !col.hidden;
-}
-
-function resetColumns() {
-  state.columns = null;
-  state.key = (state.key || 1) + 1;
-}
 
 const reportingTitle = (data: any, report: number) => {
   switch ((_state(data) + report) % 3) {
@@ -187,8 +175,9 @@ const suiviRRClick = (_data: any) => 0;
     </template>
     <template v-slot:columnsMenuTemplate>
       <div class="k-list-content">
-        <ColumnsGridMenu :columns="state.columns" :default-columns="DEFAULT_COLUMNS" @toggle="toggleColumn"
-          @reset-columns="resetColumns" :keep-margin="true"></ColumnsGridMenu>
+        <ColumnsGridMenu :columns="state.columns" :default-columns="DEFAULT_COLUMNS"
+          @toggle="(c) => toggleColumn(c, state, DEFAULT_COLUMNS)" @reset-columns="() => resetColumns(state)"
+          :keep-margin="true"></ColumnsGridMenu>
       </div>
     </template>
   </Grid>

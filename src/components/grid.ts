@@ -52,7 +52,7 @@ export function pageChangeHandler(event: GridPageChangeEvent, state: GridStateSt
 }
 
 export function reorderColumns(event: GridColumnReorderEvent, state: GridStateStore, defaultColumns: GridColumnPropsT[]) {
-    if (!state.columns) state.columns = defaultColumns;
+    if (!state.columns) state.columns = defaultColumns.map(c => Object.assign({}, c));
     for (let i = 1; i < state.columns.length; ++i) {
         const item = state.columns[i];
         if (item.orderIndex === undefined)
@@ -68,6 +68,18 @@ export function reorderColumns(event: GridColumnReorderEvent, state: GridStateSt
 export function resizeColumns(event: GridColumnResizeEvent, state: GridStateStore) {
     if (!event.end) return;
     event.columns[event.index].width = event.newWidth;
-    if (!state.columns) state.columns = event.columns as GridColumnPropsT[];
+    if (!state.columns) state.columns = event.columns.map(c => Object.assign({}, c) as GridColumnPropsT);
     else state.columns[event.index].width = event.newWidth;
+}
+
+export function toggleColumn(title: string, state: GridStateStore, defaultColumns: GridColumnPropsT[]) {
+    if (!state.columns)
+        state.columns = defaultColumns.map(c => Object.assign({}, c));
+    const col = state.columns.find(c => c.title == title);
+    if (col) col.hidden = !col.hidden;
+}
+
+export function resetColumns(state: GridStateStore) {
+    state.columns = null;
+    state.key = (state.key || 1) + 1;
 }
